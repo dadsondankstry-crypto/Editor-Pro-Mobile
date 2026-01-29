@@ -3,9 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Editor Pro Mobile</title>
+    <title>Editor Pro PWA</title>
+    
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#f0f2f5">
+    <meta name="theme-color" content="#34495e">
+
     <style>
         * { box-sizing: border-box; }
         body { 
@@ -13,46 +15,78 @@
             margin: 0; padding: 10px; background: #f0f2f5; 
             display: flex; flex-direction: column; min-height: 100vh;
         }
-        h2 { text-align: center; font-size: 1.1rem; margin: 8px 0; color: #333; }
+
+        .header-container {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            align-items: center;
+            margin-bottom: 15px;
+            gap: 10px;
+        }
+
+        h2 { grid-column: 2; text-align: center; font-size: 1rem; margin: 0; color: #333; }
+        
+        .btn-fullscreen {
+            grid-column: 3; justify-self: end; background: #e74c3c; 
+            color: white; border: none; border-radius: 6px;
+            padding: 10px 12px; font-size: 11px; font-weight: bold; cursor: pointer;
+        }
+
         .barra-ferramentas { display: flex; gap: 8px; margin-bottom: 10px; }
         .btn-tool {
-            flex: 1; padding: 14px; font-size: 13px; border-radius: 6px;
+            flex: 1; padding: 12px; font-size: 12px; border-radius: 6px;
             border: none; color: white; font-weight: bold; cursor: pointer;
         }
         .btn-copy { background: #34495e; }
         .btn-paste { background: #4a90e2; }
         .btn-clear { background: #e74c3c; }
+        
         textarea { 
-            flex: 1; min-height: 350px; width: 100%; padding: 12px; 
+            flex: 1; min-height: 300px; width: 100%; padding: 12px; 
             border: 1px solid #ddd; border-radius: 8px; 
             font-family: 'Consolas', monospace; font-size: 16px;
             resize: none; outline: none; background: #fff; margin-bottom: 10px;
         }
+
         .container-controles {
-            background: #fff; padding: 15px; border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 25px;
+            background: #fff; padding: 12px; border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 10px;
         }
-        .linha-nome { display: flex; gap: 8px; margin-bottom: 12px; }
-        input[type="text"] { flex: 1; padding: 14px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; }
-        .btn-abrir { background: #5cb85c; padding: 0 20px; border: none; border-radius: 8px; color: white; font-weight: bold; }
-        .grid-salvar { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-        .btn-action { border: none; border-radius: 8px; color: white; font-weight: bold; padding: 18px 0; font-size: 14px; }
-        .js { background: #f0ad4e; } .json { background: #d9534f; } .css { background: #5bc0de; }
-        .md { background: #34495e; } .html { background: #9b59b6; } .txt { background: #95a5a6; }
+        
+        .grid-salvar { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+        .btn-save-especifico { 
+            border: none; border-radius: 8px; color: white; font-weight: bold; 
+            padding: 15px; font-size: 13px; text-align: center; cursor: pointer;
+        }
+        
+        .btn-style { background: #5bc0de; }    
+        .btn-app { background: #f0ad4e; }      
+        .btn-manifest { background: #d9534f; } 
+        .btn-sw { background: #95a5a6; }       
+        .btn-index { background: #9b59b6; }    
+
+        /* Toast reposicionado para 65% do topo */
         #toast {
-            visibility: hidden; min-width: 220px; background-color: rgba(51, 51, 51, 0.95);
-            color: #fff; text-align: center; border-radius: 50px;
-            padding: 12px 20px; position: fixed; z-index: 1000;
-            left: 50%; top: 60%; transform: translate(-50%, -50%);
-            font-size: 14px; pointer-events: none;
+            visibility: hidden; min-width: 220px; background-color: rgba(0,0,0,0.85);
+            color: #fff; text-align: center; border-radius: 8px;
+            padding: 12px; position: fixed; z-index: 1000;
+            left: 50%; top: 65%; transform: translate(-50%, -50%); 
+            font-size: 14px; font-weight: bold;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
         }
-        #toast.show { visibility: visible; animation: fadein 0.3s; }
-        @keyframes fadein { from {opacity: 0;} to {opacity: 1;} }
+        #toast.show { visibility: visible; animation: fadeInOut 2s; }
+        @keyframes fadeInOut {
+            0% { opacity: 0; } 20% { opacity: 1; } 80% { opacity: 1; } 100% { opacity: 0; }
+        }
     </style>
 </head>
 <body>
 
-    <h2>📝 Editor Pro Mobile</h2>
+    <div class="header-container">
+        <div></div> 
+        <h2>Editor Pro Mobile</h2>
+        <button class="btn-fullscreen" onclick="toggleFullScreen()">⛶ FULL</button>
+    </div>
 
     <div class="barra-ferramentas">
         <button class="btn-tool btn-copy" onclick="copiarTexto()">📋 COPIAR</button>
@@ -60,77 +94,84 @@
         <button class="btn-tool btn-clear" onclick="limparTexto()">🗑️ LIMPAR</button>
     </div>
 
-    <textarea id="texto" placeholder="Escreva seu código aqui..."></textarea>
+    <textarea id="texto" placeholder="Digite seu código aqui..."></textarea>
 
     <div class="container-controles">
-        <div class="linha-nome">
-            <input type="text" id="nomeArquivo" placeholder="Nome do arquivo">
-            <input type="file" id="inputAbrir" accept=".txt,.js,.json,.css,.md,.html" style="display: none;" onchange="abrirArquivo(event)">
-            <button class="btn-abrir" onclick="document.getElementById('inputAbrir').click()">📂 ABRIR</button>
-        </div>
         <div class="grid-salvar">
-            <button class="btn-action js" onclick="salvar('.js')">.JS</button>
-            <button class="btn-action json" onclick="salvar('.json')">.JSON</button>
-            <button class="btn-action css" onclick="salvar('.css')">.CSS</button>
-            <button class="btn-action md" onclick="salvar('.md')">.MD</button>
-            <button class="btn-action html" onclick="salvar('.html')">.HTML</button>
-            <button class="btn-action txt" onclick="salvar('.txt')">.TXT</button>
+            <button class="btn-save-especifico btn-style" onclick="baixar('style.css')">STYLE (CSS)</button>
+            <button class="btn-save-especifico btn-app" onclick="baixar('app.js')">APP (JS)</button>
+            <button class="btn-save-especifico btn-manifest" onclick="baixar('manifest.json')">MANIFEST (JSON)</button>
+            <button class="btn-save-especifico btn-sw" onclick="baixar('sw.js')">SW (JS)</button>
+            <button class="btn-save-especifico btn-index" style="grid-column: span 2;" onclick="baixar('index.html')">INDEX (HTML)</button>
         </div>
     </div>
 
     <div id="toast"></div>
 
     <script>
-        // Registrar o Service Worker para PWA
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js')
-                .then(() => console.log("PWA Ativo!"))
-                .catch(err => console.log("Erro no PWA:", err));
-        }
-
         function mostrarToast(msg) {
             const x = document.getElementById("toast");
             x.innerText = msg;
             x.className = "show";
-            setTimeout(() => { x.className = ""; }, 2200);
+            setTimeout(() => { x.className = ""; }, 2000);
         }
 
-        function limparTexto() { document.getElementById('texto').value = ""; mostrarToast("Editor limpo! 🗑️"); }
+        function toggleFullScreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+            } else {
+                if (document.exitFullscreen) document.exitFullscreen();
+            }
+        }
+
         function copiarTexto() {
             const area = document.getElementById('texto');
-            if (!area.value) { mostrarToast("Nada para copiar! ❌"); return; }
+            if (!area.value.trim()) {
+                mostrarToast("❌ Texto vazio para copiar!");
+                return;
+            }
             navigator.clipboard.writeText(area.value);
-            mostrarToast("Copiado! 📋");
+            mostrarToast("📋 Copiado com sucesso!");
         }
+
         async function colarTexto() {
             try {
                 const clip = await navigator.clipboard.readText();
+                if (!clip) {
+                    mostrarToast("⚠️ Nada para colar!");
+                    return;
+                }
                 document.getElementById('texto').value += clip;
-                mostrarToast("Colado! 📥");
-            } catch (err) { mostrarToast("Erro ao colar ⚠️"); }
+                mostrarToast("📥 Texto colado!");
+            } catch (err) { 
+                mostrarToast("❌ Erro ao acessar área de transferência!"); 
+            }
         }
-        function salvar(ext) {
-            const t = document.getElementById('texto').value;
-            const n = document.getElementById('nomeArquivo').value;
-            if (!n) { mostrarToast("⚠️ Digite um nome!"); return; }
-            const blob = new Blob([t], { type: "text/plain" });
+
+        function limparTexto() { 
+            document.getElementById('texto').value = ""; 
+            mostrarToast("🗑️ Editor limpo!"); 
+        }
+
+        function baixar(nomeArquivo) {
+            const conteudo = document.getElementById('texto').value;
+            if (!conteudo.trim()) {
+                mostrarToast("🚫 Documento em branco não pode ser salvo!");
+                return;
+            }
+            const blob = new Blob([conteudo], { type: "text/plain" });
             const link = document.createElement("a");
-            link.download = n + ext;
+            link.download = nomeArquivo;
             link.href = window.URL.createObjectURL(blob);
             link.click();
-            mostrarToast("Salvando " + ext + "... ✅");
+            mostrarToast("✅ " + nomeArquivo + " salvo!");
         }
-        function abrirArquivo(e) {
-            const f = e.target.files[0];
-            if (!f) return;
-            const r = new FileReader();
-            r.onload = (ev) => {
-                document.getElementById('texto').value = ev.target.result;
-                document.getElementById('nomeArquivo').value = f.name.replace(/\.[^/.]+$/, "");
-                mostrarToast("Arquivo aberto! 📂");
-            };
-            r.readAsText(f);
+
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js').catch(() => {});
         }
     </script>
 </body>
 </html>
+
+
