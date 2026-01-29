@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Editor Pro Mobile</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#f0f2f5">
+    <style>
+        * { box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+            margin: 0; padding: 10px; background: #f0f2f5; 
+            display: flex; flex-direction: column; min-height: 100vh;
+        }
+        h2 { text-align: center; font-size: 1.1rem; margin: 8px 0; color: #333; }
+        .barra-ferramentas { display: flex; gap: 8px; margin-bottom: 10px; }
+        .btn-tool {
+            flex: 1; padding: 14px; font-size: 13px; border-radius: 6px;
+            border: none; color: white; font-weight: bold; cursor: pointer;
+        }
+        .btn-copy { background: #34495e; }
+        .btn-paste { background: #4a90e2; }
+        .btn-clear { background: #e74c3c; }
+        textarea { 
+            flex: 1; min-height: 350px; width: 100%; padding: 12px; 
+            border: 1px solid #ddd; border-radius: 8px; 
+            font-family: 'Consolas', monospace; font-size: 16px;
+            resize: none; outline: none; background: #fff; margin-bottom: 10px;
+        }
+        .container-controles {
+            background: #fff; padding: 15px; border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 25px;
+        }
+        .linha-nome { display: flex; gap: 8px; margin-bottom: 12px; }
+        input[type="text"] { flex: 1; padding: 14px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; }
+        .btn-abrir { background: #5cb85c; padding: 0 20px; border: none; border-radius: 8px; color: white; font-weight: bold; }
+        .grid-salvar { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+        .btn-action { border: none; border-radius: 8px; color: white; font-weight: bold; padding: 18px 0; font-size: 14px; }
+        .js { background: #f0ad4e; } .json { background: #d9534f; } .css { background: #5bc0de; }
+        .md { background: #34495e; } .html { background: #9b59b6; } .txt { background: #95a5a6; }
+        #toast {
+            visibility: hidden; min-width: 220px; background-color: rgba(51, 51, 51, 0.95);
+            color: #fff; text-align: center; border-radius: 50px;
+            padding: 12px 20px; position: fixed; z-index: 1000;
+            left: 50%; top: 60%; transform: translate(-50%, -50%);
+            font-size: 14px; pointer-events: none;
+        }
+        #toast.show { visibility: visible; animation: fadein 0.3s; }
+        @keyframes fadein { from {opacity: 0;} to {opacity: 1;} }
+    </style>
+</head>
+<body>
+
+    <h2>📝 Editor Pro Mobile</h2>
+
+    <div class="barra-ferramentas">
+        <button class="btn-tool btn-copy" onclick="copiarTexto()">📋 COPIAR</button>
+        <button class="btn-tool btn-paste" onclick="colarTexto()">📥 COLAR</button>
+        <button class="btn-tool btn-clear" onclick="limparTexto()">🗑️ LIMPAR</button>
+    </div>
+
+    <textarea id="texto" placeholder="Escreva seu código aqui..."></textarea>
+
+    <div class="container-controles">
+        <div class="linha-nome">
+            <input type="text" id="nomeArquivo" placeholder="Nome do arquivo">
+            <input type="file" id="inputAbrir" accept=".txt,.js,.json,.css,.md,.html" style="display: none;" onchange="abrirArquivo(event)">
+            <button class="btn-abrir" onclick="document.getElementById('inputAbrir').click()">📂 ABRIR</button>
+        </div>
+        <div class="grid-salvar">
+            <button class="btn-action js" onclick="salvar('.js')">.JS</button>
+            <button class="btn-action json" onclick="salvar('.json')">.JSON</button>
+            <button class="btn-action css" onclick="salvar('.css')">.CSS</button>
+            <button class="btn-action md" onclick="salvar('.md')">.MD</button>
+            <button class="btn-action html" onclick="salvar('.html')">.HTML</button>
+            <button class="btn-action txt" onclick="salvar('.txt')">.TXT</button>
+        </div>
+    </div>
+
+    <div id="toast"></div>
+
+    <script>
+        // Registrar o Service Worker para PWA
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js')
+                .then(() => console.log("PWA Ativo!"))
+                .catch(err => console.log("Erro no PWA:", err));
+        }
+
+        function mostrarToast(msg) {
+            const x = document.getElementById("toast");
+            x.innerText = msg;
+            x.className = "show";
+            setTimeout(() => { x.className = ""; }, 2200);
+        }
+
+        function limparTexto() { document.getElementById('texto').value = ""; mostrarToast("Editor limpo! 🗑️"); }
+        function copiarTexto() {
+            const area = document.getElementById('texto');
+            if (!area.value) { mostrarToast("Nada para copiar! ❌"); return; }
+            navigator.clipboard.writeText(area.value);
+            mostrarToast("Copiado! 📋");
+        }
+        async function colarTexto() {
+            try {
+                const clip = await navigator.clipboard.readText();
+                document.getElementById('texto').value += clip;
+                mostrarToast("Colado! 📥");
+            } catch (err) { mostrarToast("Erro ao colar ⚠️"); }
+        }
+        function salvar(ext) {
+            const t = document.getElementById('texto').value;
+            const n = document.getElementById('nomeArquivo').value;
+            if (!n) { mostrarToast("⚠️ Digite um nome!"); return; }
+            const blob = new Blob([t], { type: "text/plain" });
+            const link = document.createElement("a");
+            link.download = n + ext;
+            link.href = window.URL.createObjectURL(blob);
+            link.click();
+            mostrarToast("Salvando " + ext + "... ✅");
+        }
+        function abrirArquivo(e) {
+            const f = e.target.files[0];
+            if (!f) return;
+            const r = new FileReader();
+            r.onload = (ev) => {
+                document.getElementById('texto').value = ev.target.result;
+                document.getElementById('nomeArquivo').value = f.name.replace(/\.[^/.]+$/, "");
+                mostrarToast("Arquivo aberto! 📂");
+            };
+            r.readAsText(f);
+        }
+    </script>
+</body>
+</html>
