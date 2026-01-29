@@ -32,7 +32,7 @@
             padding: 10px 12px; font-size: 11px; font-weight: bold; cursor: pointer;
         }
 
-        .barra-ferramentas { display: flex; gap: 8px; margin-bottom: 10px; }
+        .barra-ferramentas { display: flex; gap: 8px; margin-bottom: 15px; }
         .btn-tool {
             flex: 1; padding: 12px; font-size: 12px; border-radius: 6px;
             border: none; color: white; font-weight: bold; cursor: pointer;
@@ -65,18 +65,18 @@
         .btn-sw { background: #95a5a6; }       
         .btn-index { background: #9b59b6; }    
 
-        /* Toast reposicionado para 65% do topo */
+        /* Toast posicionado a 65% do topo */
         #toast {
-            visibility: hidden; min-width: 220px; background-color: rgba(0,0,0,0.85);
-            color: #fff; text-align: center; border-radius: 8px;
-            padding: 12px; position: fixed; z-index: 1000;
+            visibility: hidden; width: 85%; max-width: 300px; background-color: rgba(0,0,0,0.9);
+            color: #fff; text-align: center; border-radius: 10px;
+            padding: 15px; position: fixed; z-index: 1000;
             left: 50%; top: 65%; transform: translate(-50%, -50%); 
-            font-size: 14px; font-weight: bold;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            font-size: 13px; line-height: 1.4;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.4);
         }
-        #toast.show { visibility: visible; animation: fadeInOut 2s; }
+        #toast.show { visibility: visible; animation: fadeInOut 3.5s; }
         @keyframes fadeInOut {
-            0% { opacity: 0; } 20% { opacity: 1; } 80% { opacity: 1; } 100% { opacity: 0; }
+            0% { opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } 100% { opacity: 0; }
         }
     </style>
 </head>
@@ -109,11 +109,11 @@
     <div id="toast"></div>
 
     <script>
-        function mostrarToast(msg) {
+        function mostrarToast(msg, tempo = 2500) {
             const x = document.getElementById("toast");
-            x.innerText = msg;
+            x.innerHTML = msg;
             x.className = "show";
-            setTimeout(() => { x.className = ""; }, 2000);
+            setTimeout(() => { x.className = ""; }, tempo);
         }
 
         function toggleFullScreen() {
@@ -127,36 +127,46 @@
         function copiarTexto() {
             const area = document.getElementById('texto');
             if (!area.value.trim()) {
-                mostrarToast("❌ Texto vazio para copiar!");
+                mostrarToast("❌ Texto vazio!");
                 return;
             }
             navigator.clipboard.writeText(area.value);
-            mostrarToast("📋 Copiado com sucesso!");
+            mostrarToast("📋 Copiado!");
         }
 
         async function colarTexto() {
             try {
+                // Tenta verificar a permissão antes de colar
+                const statusPermissao = await navigator.permissions.query({ name: 'clipboard-read' });
+
+                if (statusPermissao.state === 'prompt') {
+                    mostrarToast("<b>🔐 Por segurança do navegador:</b><br>Clique em 'Permitir' na janela que apareceu para poder colar. Se não quiser permitir, você pode colar segurando o dedo na tela.", 5000);
+                }
+
                 const clip = await navigator.clipboard.readText();
                 if (!clip) {
                     mostrarToast("⚠️ Nada para colar!");
                     return;
                 }
                 document.getElementById('texto').value += clip;
-                mostrarToast("📥 Texto colado!");
+                
+                // Se chegou aqui, deu certo, mostra aviso curto
+                mostrarToast("📥 Colado!");
+
             } catch (err) { 
-                mostrarToast("❌ Erro ao acessar área de transferência!"); 
+                mostrarToast("❌ Erro: O navegador bloqueou o acesso. Use o método de clicar e segurar para colar."); 
             }
         }
 
         function limparTexto() { 
             document.getElementById('texto').value = ""; 
-            mostrarToast("🗑️ Editor limpo!"); 
+            mostrarToast("🗑️ Editor limpo!");
         }
 
         function baixar(nomeArquivo) {
             const conteudo = document.getElementById('texto').value;
             if (!conteudo.trim()) {
-                mostrarToast("🚫 Documento em branco não pode ser salvo!");
+                mostrarToast("🚫 Nada para salvar!");
                 return;
             }
             const blob = new Blob([conteudo], { type: "text/plain" });
@@ -173,5 +183,3 @@
     </script>
 </body>
 </html>
-
-
