@@ -17,21 +17,14 @@
         }
 
         .header-container {
-            display: grid;
-            grid-template-columns: 1fr auto 1fr;
+            display: flex;
+            justify-content: center;
             align-items: center;
             margin-bottom: 15px;
-            gap: 10px;
         }
 
-        h2 { grid-column: 2; text-align: center; font-size: 1rem; margin: 0; color: #333; }
+        h2 { text-align: center; font-size: 1.1rem; margin: 0; color: #333; }
         
-        .btn-fullscreen {
-            grid-column: 3; justify-self: end; background: #e74c3c; 
-            color: white; border: none; border-radius: 6px;
-            padding: 10px 12px; font-size: 11px; font-weight: bold; cursor: pointer;
-        }
-
         .barra-ferramentas { display: flex; gap: 8px; margin-bottom: 15px; }
         .btn-tool {
             flex: 1; padding: 12px; font-size: 12px; border-radius: 6px;
@@ -42,7 +35,7 @@
         .btn-clear { background: #e74c3c; }
         
         textarea { 
-            flex: 1; min-height: 300px; width: 100%; padding: 12px; 
+            flex: 1; min-height: 350px; width: 100%; padding: 12px; 
             border: 1px solid #ddd; border-radius: 8px; 
             font-family: 'Consolas', monospace; font-size: 16px;
             resize: none; outline: none; background: #fff; margin-bottom: 10px;
@@ -65,27 +58,34 @@
         .btn-sw { background: #95a5a6; }       
         .btn-index { background: #9b59b6; }    
 
-        /* Toast posicionado a 65% do topo */
+        /* Toast com tempo de exibição de 10 segundos */
         #toast {
-            visibility: hidden; width: 85%; max-width: 300px; background-color: rgba(0,0,0,0.9);
+            visibility: hidden; width: 85%; max-width: 320px; background-color: rgba(0,0,0,0.95);
             color: #fff; text-align: center; border-radius: 10px;
-            padding: 15px; position: fixed; z-index: 1000;
-            left: 50%; top: 65%; transform: translate(-50%, -50%); 
-            font-size: 13px; line-height: 1.4;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+            padding: 18px; position: fixed; z-index: 1000;
+            left: 50%; top: 60%; transform: translate(-50%, -50%); 
+            font-size: 14px; line-height: 1.5;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+            border: 1px solid transparent;
         }
-        #toast.show { visibility: visible; animation: fadeInOut 3.5s; }
+        
+        /* Estilo especial para erro de permissão */
+        #toast.erro-seguranca {
+            border: 2px solid #f1c40f;
+            background-color: #1a1a1a;
+        }
+
+        #toast.show { visibility: visible; animation: fadeInOut 10s; }
+        
         @keyframes fadeInOut {
-            0% { opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } 100% { opacity: 0; }
+            0% { opacity: 0; } 5% { opacity: 1; } 95% { opacity: 1; } 100% { opacity: 0; }
         }
     </style>
 </head>
 <body>
 
     <div class="header-container">
-        <div></div> 
         <h2>Editor Pro Mobile</h2>
-        <button class="btn-fullscreen" onclick="toggleFullScreen()">⛶ FULL</button>
     </div>
 
     <div class="barra-ferramentas">
@@ -94,7 +94,7 @@
         <button class="btn-tool btn-clear" onclick="limparTexto()">🗑️ LIMPAR</button>
     </div>
 
-    <textarea id="texto" placeholder="Digite seu código aqui..."></textarea>
+    <textarea id="texto" placeholder="Digite ou cole seu código aqui..."></textarea>
 
     <div class="container-controles">
         <div class="grid-salvar">
@@ -109,19 +109,24 @@
     <div id="toast"></div>
 
     <script>
-        function mostrarToast(msg, tempo = 2500) {
+        let toastTimeout;
+
+        function mostrarToast(msg, duracao = 2500, ehErro = false) {
             const x = document.getElementById("toast");
+            clearTimeout(toastTimeout);
+            
             x.innerHTML = msg;
             x.className = "show";
-            setTimeout(() => { x.className = ""; }, tempo);
-        }
-
-        function toggleFullScreen() {
-            if (!document.fullscreenElement) {
-                document.documentElement.requestFullscreen();
+            
+            if (ehErro) {
+                x.classList.add("erro-seguranca");
             } else {
-                if (document.exitFullscreen) document.exitFullscreen();
+                x.classList.remove("erro-seguranca");
             }
+
+            toastTimeout = setTimeout(() => { 
+                x.className = ""; 
+            }, duracao);
         }
 
         function copiarTexto() {
@@ -136,25 +141,23 @@
 
         async function colarTexto() {
             try {
-                // Tenta verificar a permissão antes de colar
-                const statusPermissao = await navigator.permissions.query({ name: 'clipboard-read' });
-
-                if (statusPermissao.state === 'prompt') {
-                    mostrarToast("<b>🔐 Por segurança do navegador:</b><br>Clique em 'Permitir' na janela que apareceu para poder colar. Se não quiser permitir, você pode colar segurando o dedo na tela.", 5000);
-                }
-
                 const clip = await navigator.clipboard.readText();
                 if (!clip) {
                     mostrarToast("⚠️ Nada para colar!");
                     return;
                 }
                 document.getElementById('texto').value += clip;
-                
-                // Se chegou aqui, deu certo, mostra aviso curto
-                mostrarToast("📥 Colado!");
-
+                mostrarToast("📥 Colado com sucesso!");
             } catch (err) { 
-                mostrarToast("❌ Erro: O navegador bloqueou o acesso. Use o método de clicar e segurar para colar."); 
+                // Exibe por 10 segundos com estilo de erro
+                mostrarToast(
+                    "<b>🔐 BLOQUEIO DE SEGURANÇA:</b><br><br>" +
+                    "O navegador exige sua permissão para colar código via botão. " +
+                    "Clique em <b>'Permitir'</b> na janela que o navegador abriu.<br><br>" +
+                    "<i>Se não aparecer a opção, você pode colar manualmente segurando o dedo no editor.</i>", 
+                    10000, 
+                    true
+                ); 
             }
         }
 
